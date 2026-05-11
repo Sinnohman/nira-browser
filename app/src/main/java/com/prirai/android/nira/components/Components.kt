@@ -381,8 +381,30 @@ open class Components(private val applicationContext: Context) {
             runtimeSettings.contentBlocking.setSafeBrowsingPhishingTable()
         }
 
-        GeckoRuntime.create(applicationContext, runtimeSettings)
+        try {
+            GeckoRuntime.create(applicationContext, runtimeSettings)
+        } catch (e: NullPointerException) {
+            // Android 10 workaround: GeckoRuntime.create() → DebugConfig.fromFile() calls
+            // Package.getName() on a null reference (upstream GeckoView bug).
+            // Retry with about:config disabled (avoids DebugConfig codepath).
+            logger.warn("GeckoRuntime.create() failed on first attempt (likely Android 10 bug), retrying with aboutConfig disabled", e)
+
+            val fallbackSettings = GeckoRuntimeSettings.Builder()
+                .aboutConfigEnabled(false)
+                .extensionsProcessEnabled(true)
+                .debugLogging(false)
+                .extensionsWebAPIEnabled(true)
+                .contentBlocking(trackingPolicy.toContentBlockingSetting())
+                .build()
+
+            UserJsPreferences.applyTypedSettings(fallbackSettings)
+            fallbackSettings.contentBlocking.setSafeBrowsing(safeBrowsingPolicy)
+
+            GeckoRuntime.create(applicationContext, fallbackSettings)
+        }
     }
+
+    private val logger = Logger("Components")
 
     private val trackingPolicy by lazy{
         if(UserPreferences(applicationContext).trackingProtection) EngineSession.TrackingProtectionPolicy.recommended()
