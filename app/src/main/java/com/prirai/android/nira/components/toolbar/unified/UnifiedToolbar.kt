@@ -86,7 +86,9 @@ class UnifiedToolbar @JvmOverloads constructor(
     private var contextualToolbarListener: ContextualBottomToolbar.ContextualToolbarListener? = null
 
     // Configuration
-    private var showTabGroupBar: Boolean = prefs.showTabGroupBar
+    // Read showTabGroupBar directly from prefs each time rather than caching it,
+    // so that changes to the setting take effect immediately (not just after restart).
+    // This fixes Issue #70 where the tab group bar would persist when disabled.
     private var showContextualToolbar: Boolean = prefs.showContextualToolbar
     
     // Bottom components container reference (for TOP toolbar mode)
@@ -252,7 +254,7 @@ class UnifiedToolbar @JvmOverloads constructor(
         store: BrowserStore,
         lifecycleOwner: LifecycleOwner
     ) {
-        if (!showTabGroupBar) {
+        if (!prefs.showTabGroupBar) {
             return
         }
 
@@ -490,7 +492,7 @@ class UnifiedToolbar @JvmOverloads constructor(
         // The container will be created lazily in getBottomComponentsContainer()
         
         // Create tab group bar if enabled
-        if (showTabGroupBar) {
+        if (prefs.showTabGroupBar) {
             createTabGroupBar(store, lifecycleOwner)
         }
         
@@ -782,10 +784,9 @@ class UnifiedToolbar @JvmOverloads constructor(
      * Update component visibility based on settings
      */
     fun updateComponentVisibility(
-        showTabBar: Boolean = showTabGroupBar,
+        showTabBar: Boolean = prefs.showTabGroupBar,
         showContextual: Boolean = showContextualToolbar
     ) {
-        showTabGroupBar = showTabBar
         showContextualToolbar = showContextual
 
         tabGroupBar?.visibility = if (showTabBar) VISIBLE else GONE
