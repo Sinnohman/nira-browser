@@ -575,6 +575,10 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
     private fun setupFindInPage(view: View) {
         val stub = view.findViewById<ViewStub>(R.id.stubFindInPage) ?: return
         
+        // Get the browser toolbar from unified toolbar; bail early if unavailable
+        // rather than crashing with !! if unifiedToolbar or getBrowserToolbar() is null
+        val browserToolbar = unifiedToolbar?.getBrowserToolbar() ?: return
+        
         findInPageIntegration.set(
             feature = FindInPageIntegration(
                 store = requireContext().components.store,
@@ -582,7 +586,7 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
                 stub = stub,
                 engineView = binding.engineView,
                 toolbarInfo = FindInPageIntegration.ToolbarInfo(
-                    toolbar = unifiedToolbar?.getBrowserToolbar()!!,
+                    toolbar = browserToolbar,
                     isToolbarDynamic = true,
                     isToolbarPlacedAtTop = true
                 ),
