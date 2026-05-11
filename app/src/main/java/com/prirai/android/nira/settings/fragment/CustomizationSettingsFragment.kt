@@ -431,6 +431,13 @@ class CustomizationSettingsFragment : BaseSettingsFragment() {
             .show()
     }
 
+    // Snap a float to the nearest valid step value for Material Slider
+    // Material Slider crashes if value != valueFrom + N * stepSize
+    private fun snapToStep(value: Float, from: Float, step: Float): Float {
+        val steps = Math.round((value - from) / step)
+        return from + steps * step
+    }
+
     private fun showIconSizeDialog() {
         val userPreferences = UserPreferences(requireContext())
         val dialogView = layoutInflater.inflate(R.layout.dialog_size_picker, null)
@@ -438,10 +445,10 @@ class CustomizationSettingsFragment : BaseSettingsFragment() {
         val previewIcon = dialogView.findViewById<android.widget.ImageView>(R.id.previewIcon)
         val previewText = dialogView.findViewById<android.widget.TextView>(R.id.previewText)
         
-        slider.value = userPreferences.toolbarIconSize
-        slider.valueFrom = 0.8f
-        slider.valueTo = 1.5f
-        slider.stepSize = 0.1f
+        // valueFrom and stepSize are already set in XML (dialog_size_picker.xml)
+        // Snap the saved preference value to the nearest valid step to prevent
+        // Material Slider's IllegalStateException when value doesn't align with stepSize
+        slider.value = snapToStep(userPreferences.toolbarIconSize, 0.8f, 0.1f)
         
         previewText.text = getString(R.string.toolbar_icon_size)
         updateIconPreview(previewIcon, userPreferences.toolbarIconSize)

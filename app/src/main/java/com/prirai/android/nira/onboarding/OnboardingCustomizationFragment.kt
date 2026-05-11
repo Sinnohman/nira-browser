@@ -53,13 +53,23 @@ class OnboardingCustomizationFragment : Fragment() {
             updateToolbarSelection()
         }
         
-        iconSizeSlider.value = userPreferences.toolbarIconSize
+        // Snap saved preference value to nearest valid step to prevent
+        // Material Slider crash when value doesn't align with stepSize (0.1)
+        // valueFrom (0.8) and stepSize (0.1) are already set in XML
+        iconSizeSlider.value = snapToStep(userPreferences.toolbarIconSize, 0.8f, 0.1f)
         updateIconPreview(userPreferences.toolbarIconSize)
         
         iconSizeSlider.addOnChangeListener { _, value, _ ->
             userPreferences.toolbarIconSize = value
             updateIconPreview(value)
         }
+    }
+
+    // Snap a float to the nearest valid step value for Material Slider
+    // Material Slider crashes if value != valueFrom + N * stepSize
+    private fun snapToStep(value: Float, from: Float, step: Float): Float {
+        val steps = Math.round((value - from) / step)
+        return from + steps * step
     }
     
     private fun updateToolbarSelection() {
