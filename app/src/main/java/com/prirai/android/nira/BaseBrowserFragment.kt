@@ -487,7 +487,7 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
 
         expandToolbarOnNavigation(store)
 
-        // Setup swipe to refresh
+            // Setup swipe to refresh
         binding.swipeRefresh.isEnabled = shouldPullToRefreshBeEnabled()
 
         if (binding.swipeRefresh.isEnabled) {
@@ -504,17 +504,25 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
                 statusBarHeight + resources.getDimensionPixelSize(R.dimen.browser_toolbar_height)
             )
             
-            swipeRefreshFeature.set(
-                feature = SwipeRefreshFeature(
-                    requireContext().components.store,
-                    requireContext().components.sessionUseCases.reload,
-                    binding.swipeRefresh,
-                    ({}),
-                    customTabSessionId
-                ),
-                owner = this,
-                view = view
-            )
+            // Post to ensure view is fully attached before SwipeRefreshFeature initialization
+            // Without this, the feature may not properly connect to the swipe refresh layout
+            // after a process restart, requiring a tab switch to activate
+            view.post {
+                // Guard: view may have been destroyed while this was queued
+                if (_binding == null) return@post
+                
+                swipeRefreshFeature.set(
+                    feature = SwipeRefreshFeature(
+                        requireContext().components.store,
+                        requireContext().components.sessionUseCases.reload,
+                        binding.swipeRefresh,
+                        ({}),
+                        customTabSessionId
+                    ),
+                    owner = this@BaseBrowserFragment,
+                    view = view
+                )
+            }
             
             // Observe tab changes to re-enable swipe refresh when switching tabs
             consumeFlow(store) { flow ->
